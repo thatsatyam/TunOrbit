@@ -3,6 +3,7 @@ package com.tunorbit.music.core.repository
 import com.tunorbit.music.core.data.source.MusicDataSource
 import com.tunorbit.music.core.model.Artist
 import com.tunorbit.music.core.model.Song
+import kotlinx.coroutines.flow.Flow
 
 class DefaultMusicRepository(
     private val dataSource: MusicDataSource
@@ -22,5 +23,13 @@ class DefaultMusicRepository(
 
     override suspend fun getArtist(artistId: String): Artist? {
         return dataSource.getArtist(artistId)
+    }
+
+    override suspend fun toggleLike(songId: String) {
+        dataSource.toggleLike(songId)
+    }
+
+    override fun observeLikedSongs(): Flow<List<Song>> {
+        return dataSource.observeLikedSongs()
     }
 }

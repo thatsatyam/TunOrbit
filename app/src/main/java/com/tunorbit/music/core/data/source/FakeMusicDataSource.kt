@@ -1,10 +1,19 @@
 package com.tunorbit.music.core.data.source
 
+import android.content.SharedPreferences
 import com.tunorbit.music.core.model.Artist
 import com.tunorbit.music.core.model.Song
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
-class FakeMusicDataSource : MusicDataSource {
-    private val songs = listOf(
+class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSource {
+
+    private val _likedSongIds = MutableStateFlow<Set<String>>(
+        prefs.getStringSet("liked_songs", emptySet())?.toSet() ?: emptySet()
+    )
+
+    private val baseSongs = listOf(
         Song(
             id = "song_001",
             title = "Blinding Lights",
@@ -15,7 +24,8 @@ class FakeMusicDataSource : MusicDataSource {
             durationMs = 200040L,
             artworkUrl = null,
             language = "English",
-            releaseYear = 2020
+            releaseYear = 2020,
+            mediaUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
         ),
         Song(
             id = "song_002",
@@ -27,7 +37,8 @@ class FakeMusicDataSource : MusicDataSource {
             durationMs = 230453L,
             artworkUrl = null,
             language = "English",
-            releaseYear = 2016
+            releaseYear = 2016,
+            mediaUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
         ),
         Song(
             id = "song_003",
@@ -39,19 +50,22 @@ class FakeMusicDataSource : MusicDataSource {
             durationMs = 233713L,
             artworkUrl = null,
             language = "English",
-            releaseYear = 2017
+            releaseYear = 2017,
+            mediaUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
         )
     )
 
     override suspend fun searchSongs(query: String): List<Song> {
-        if (query.isBlank()) {
-            return songs
+        val likedIds = _likedSongIds.value
+        val results = if (query.isBlank()) {
+            baseSongs
+        } else {
+            baseSongs.filter {
+                it.title.contains(query, ignoreCase = true) ||
+                        it.artistName.contains(query, ignoreCase = true)
+            }
         }
-
-        return songs.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                    it.artistName.contains(query, ignoreCase = true)
-        }
+        return results.map { it.copy(isLiked = likedIds.contains(it.id)) }
     }
 
     override suspend fun searchArtists(query: String): List<Artist> {
@@ -64,5 +78,22 @@ class FakeMusicDataSource : MusicDataSource {
 
     override suspend fun getArtist(artistId: String): Artist? {
         return null
+    }
+
+    override fun observeLikedSongs(): Flow<List<Song>> {
+        return _likedSongIds.map { ids ->
+            baseSongs.filter { ids.contains(it.id) }.map { it.copy(isLiked = true) }
+        }
+    }
+
+    override suspend fun toggleLike(songId: String) {
+        val current = _likedSongIds.value.toMutableSet()
+        if (current.contains(songId)) {
+            current.remove(songId)
+        } else {
+            current.add(songId)
+        }
+        prefs.edit().putStringSet("liked_songs", current).apply()
+        _likedSongIds.value = current
     }
 }

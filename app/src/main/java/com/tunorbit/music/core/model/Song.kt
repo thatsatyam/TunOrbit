@@ -16,5 +16,7 @@ data class Song(
     val durationMs: Long = 0L,
     val artworkUrl: String? = null,
     val language: String? = null,
-    val releaseYear: Int? = null
+    val releaseYear: Int? = null,
+    val mediaUrl: String = "", // Added for real audio playback
+    val isLiked: Boolean = false
 )

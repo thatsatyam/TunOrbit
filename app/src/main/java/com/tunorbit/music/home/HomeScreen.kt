@@ -1,10 +1,12 @@
 package com.tunorbit.music.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,13 +32,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tunorbit.music.core.model.Song
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    onSongClick: (Song) -> Unit
 ) {
     val songs = viewModel.songs.collectAsState()
 
@@ -48,29 +53,35 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        HomeHeader()
+        HomeHeader(modifier = Modifier.padding(horizontal = 20.dp))
 
         Spacer(modifier = Modifier.height(28.dp))
 
         Text(
             text = "Play for Me",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(horizontal = 20.dp)
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = "Music picked for your mood and taste",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = 20.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         songs.value.firstOrNull()?.let { song ->
-            PlayForMeCard(song = song)
+            PlayForMeCard(
+                song = song,
+                modifier = Modifier.padding(horizontal = 20.dp),
+                onSongClick = onSongClick
+            )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -79,7 +90,8 @@ fun HomeScreen(
             HomeSection(
                 title = "Today's Session",
                 subtitle = "A few tracks to get you started",
-                songs = songs.value
+                songs = songs.value,
+                onSongClick = onSongClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -87,7 +99,8 @@ fun HomeScreen(
             HomeSection(
                 title = "Continue Listening",
                 subtitle = "Pick up where you left off",
-                songs = songs.value
+                songs = songs.value,
+                onSongClick = onSongClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -95,7 +108,8 @@ fun HomeScreen(
             HomeSection(
                 title = "Made for You",
                 subtitle = "Based on what you enjoy",
-                songs = songs.value
+                songs = songs.value,
+                onSongClick = onSongClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -103,16 +117,17 @@ fun HomeScreen(
             HomeSection(
                 title = "Recently Discovered",
                 subtitle = "Fresh music worth exploring",
-                songs = songs.value
+                songs = songs.value,
+                onSongClick = onSongClick
             )
         }
     }
 }
 
 @Composable
-private fun HomeHeader() {
+private fun HomeHeader(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -137,15 +152,20 @@ private fun HomeHeader() {
 }
 
 @Composable
-private fun PlayForMeCard(song: Song) {
+private fun PlayForMeCard(
+    song: Song,
+    modifier: Modifier = Modifier,
+    onSongClick: (Song) -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        onClick = { onSongClick(song) },
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
+            defaultElevation = 0.dp
         )
     ) {
         Column(
@@ -182,14 +202,18 @@ private fun PlayForMeCard(song: Song) {
                 ) {
                     Text(
                         text = song.title,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = song.artistName,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -197,9 +221,7 @@ private fun PlayForMeCard(song: Song) {
             Spacer(modifier = Modifier.height(18.dp))
 
             Button(
-                onClick = {
-                    // Real playback will be connected here later.
-                },
+                onClick = { onSongClick(song) },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Play")
@@ -212,32 +234,38 @@ private fun PlayForMeCard(song: Song) {
 private fun HomeSection(
     title: String,
     subtitle: String,
-    songs: List<Song>
+    songs: List<Song>,
+    modifier: Modifier = Modifier,
+    onSongClick: (Song) -> Unit
 ) {
     BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
-        val visibleCards = if (maxWidth >= 340.dp) 3 else 2
+        val availableWidth = maxWidth - 40.dp
+        val visibleCards = if (availableWidth >= 340.dp) 3 else 2
         val spacing = 14.dp * (visibleCards - 1).toFloat()
-        val cardWidth = (maxWidth - spacing) / visibleCards.toFloat()
+        val cardWidth = (availableWidth - spacing) / visibleCards.toFloat()
 
         Column {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 20.dp)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 20.dp)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
 
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 itemsIndexed(
@@ -248,7 +276,8 @@ private fun HomeSection(
                         song = song,
                         index = index,
                         sectionTitle = title,
-                        cardWidth = cardWidth
+                        cardWidth = cardWidth,
+                        onSongClick = onSongClick
                     )
                 }
             }
@@ -261,10 +290,15 @@ private fun SongCard(
     song: Song,
     index: Int,
     sectionTitle: String,
-    cardWidth: androidx.compose.ui.unit.Dp
+    cardWidth: Dp,
+    onSongClick: (Song) -> Unit
 ) {
-    Column(
-        modifier = Modifier.width(cardWidth)
+        Column(
+        modifier = Modifier
+            .width(cardWidth)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onSongClick(song) }
+            .padding(bottom = 12.dp)
     ) {
         Box(
             modifier = Modifier
@@ -290,12 +324,18 @@ private fun SongCard(
 
         Text(
             text = song.title,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
+
+        Spacer(modifier = Modifier.height(2.dp))
 
         Text(
             text = song.artistName,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
 
         if (sectionTitle == "Continue Listening") {
