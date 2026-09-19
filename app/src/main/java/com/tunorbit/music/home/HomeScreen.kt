@@ -43,7 +43,8 @@ import com.tunorbit.music.core.model.Song
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
-    onSongClick: (Song, List<Song>) -> Unit
+    onSongClick: (Song, List<Song>) -> Unit,
+    onArtistClick: (String) -> Unit
 ) {
     val songs = viewModel.songs.collectAsState()
     val discoverSongs = viewModel.discoverSongs.collectAsState()
@@ -83,7 +84,8 @@ fun HomeScreen(
             PlayForMeCard(
                 song = song,
                 modifier = Modifier.padding(horizontal = 20.dp),
-                onSongClick = { s -> onSongClick(s, listOf(s)) }
+                onSongClick = { s -> onSongClick(s, listOf(s)) },
+                onArtistClick = { onArtistClick(song.artistId) }
             )
         }
 
@@ -94,7 +96,8 @@ fun HomeScreen(
                 title = "Discover on Audius",
                 subtitle = "Trending tracks right now",
                 songs = discoverSongs.value,
-                onSongClick = { s -> onSongClick(s, discoverSongs.value) }
+                onSongClick = { s -> onSongClick(s, discoverSongs.value) },
+                onArtistClick = onArtistClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -107,7 +110,8 @@ fun HomeScreen(
                 title = "Today's Session",
                 subtitle = "A few tracks to get you started",
                 songs = songs.value,
-                onSongClick = { s -> onSongClick(s, songs.value) }
+                onSongClick = { s -> onSongClick(s, songs.value) },
+                onArtistClick = onArtistClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -116,7 +120,8 @@ fun HomeScreen(
                 title = "Continue Listening",
                 subtitle = "Pick up where you left off",
                 songs = songs.value,
-                onSongClick = { s -> onSongClick(s, songs.value) }
+                onSongClick = { s -> onSongClick(s, songs.value) },
+                onArtistClick = onArtistClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -125,7 +130,8 @@ fun HomeScreen(
                 title = "Made for You",
                 subtitle = "Based on what you enjoy",
                 songs = songs.value,
-                onSongClick = { s -> onSongClick(s, songs.value) }
+                onSongClick = { s -> onSongClick(s, songs.value) },
+                onArtistClick = onArtistClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -134,7 +140,8 @@ fun HomeScreen(
                 title = "Recently Discovered",
                 subtitle = "Fresh music worth exploring",
                 songs = songs.value,
-                onSongClick = { s -> onSongClick(s, songs.value) }
+                onSongClick = { s -> onSongClick(s, songs.value) },
+                onArtistClick = onArtistClick
             )
         }
     }
@@ -171,7 +178,8 @@ private fun HomeHeader(modifier: Modifier = Modifier) {
 private fun PlayForMeCard(
     song: Song,
     modifier: Modifier = Modifier,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    onArtistClick: () -> Unit
 ) {
     Card(
         onClick = { onSongClick(song) },
@@ -238,7 +246,8 @@ private fun PlayForMeCard(
                         text = song.artistName,
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { onArtistClick() }
                     )
                 }
             }
@@ -261,7 +270,8 @@ private fun HomeSection(
     subtitle: String,
     songs: List<Song>,
     modifier: Modifier = Modifier,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    onArtistClick: (String) -> Unit
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth()
@@ -302,7 +312,8 @@ private fun HomeSection(
                         index = index,
                         sectionTitle = title,
                         cardWidth = cardWidth,
-                        onSongClick = onSongClick
+                        onSongClick = onSongClick,
+                        onArtistClick = { onArtistClick(song.artistId) }
                     )
                 }
             }
@@ -316,7 +327,8 @@ private fun SongCard(
     index: Int,
     sectionTitle: String,
     cardWidth: Dp,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    onArtistClick: () -> Unit
 ) {
         Column(
         modifier = Modifier
@@ -369,7 +381,8 @@ private fun SongCard(
             text = song.artistName,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.clickable { onArtistClick() }
         )
 
         if (sectionTitle == "Continue Listening") {

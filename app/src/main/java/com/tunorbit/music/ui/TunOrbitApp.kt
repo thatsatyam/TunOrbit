@@ -31,6 +31,8 @@ import com.tunorbit.music.library.LibraryScreen
 import com.tunorbit.music.library.LibraryViewModel
 import com.tunorbit.music.library.PlaylistScreen
 import com.tunorbit.music.library.PlaylistViewModel
+import com.tunorbit.music.library.ArtistScreen
+import com.tunorbit.music.library.ArtistViewModel
 import com.tunorbit.music.player.MiniPlayer
 import com.tunorbit.music.player.PlayerScreen
 import com.tunorbit.music.player.PlayerViewModel
@@ -59,7 +61,8 @@ fun TunOrbitApp(
     searchViewModel: SearchViewModel,
     libraryViewModel: LibraryViewModel,
     playerViewModel: PlayerViewModel,
-    playlistViewModel: PlaylistViewModel
+    playlistViewModel: PlaylistViewModel,
+    artistViewModel: ArtistViewModel
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -133,6 +136,11 @@ fun TunOrbitApp(
                         navController.navigate("player") {
                             launchSingleTop = true
                         }
+                    },
+                    onArtistClick = { artistId ->
+                        navController.navigate("artist/$artistId") {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
@@ -145,7 +153,12 @@ fun TunOrbitApp(
                             launchSingleTop = true
                         }
                     },
-                    onBackClick = { navController.popBackStack(TopLevelDestination.Home.route, inclusive = false) }
+                    onBackClick = { navController.popBackStack(TopLevelDestination.Home.route, inclusive = false) },
+                    onArtistClick = { artistId ->
+                        navController.navigate("artist/$artistId") {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
             composable(TopLevelDestination.Library.route) {
@@ -181,10 +194,33 @@ fun TunOrbitApp(
                     onDeleted = { navController.popBackStack() }
                 )
             }
+            composable("artist/{artistId}") { backStackEntry ->
+                val artistId = backStackEntry.arguments?.getString("artistId") ?: return@composable
+                LaunchedEffect(artistId) {
+                    artistViewModel.loadArtist(artistId)
+                }
+                ArtistScreen(
+                    viewModel = artistViewModel,
+                    onSongClick = { song, queue ->
+                        playerViewModel.playQueue(queue, queue.indexOf(song).coerceAtLeast(0))
+                        navController.navigate("player") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
             composable("player") {
                 PlayerScreen(
                     viewModel = playerViewModel,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onArtistClick = { artistId ->
+                        // Optional: Pop player from back stack if we want to navigate straight to artist
+                        // but usually it's pushed on top
+                        navController.navigate("artist/$artistId") {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
         }

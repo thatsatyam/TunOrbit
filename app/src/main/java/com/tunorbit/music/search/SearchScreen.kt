@@ -48,7 +48,8 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel,
     onSongClick: (Song, List<Song>) -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onArtistClick: (String) -> Unit
 ) {
     val query by viewModel.searchQuery.collectAsState()
     val results by viewModel.searchResults.collectAsState()
@@ -172,10 +173,14 @@ fun SearchScreen(
                         )
                     ) {
                         items(results, key = { it.id }) { song ->
-                            SearchResultItem(song = song, onSongClick = { s -> 
-                                viewModel.addRecentSearch(query)
-                                onSongClick(s, results) 
-                            })
+                            SearchResultItem(
+                                song = song, 
+                                onSongClick = { s -> 
+                                    viewModel.addRecentSearch(query)
+                                    onSongClick(s, results) 
+                                },
+                                onArtistClick = { onArtistClick(song.artistId) }
+                            )
                         }
                     }
                 }
@@ -185,7 +190,11 @@ fun SearchScreen(
 }
 
 @Composable
-private fun SearchResultItem(song: Song, onSongClick: (Song) -> Unit) {
+private fun SearchResultItem(
+    song: Song, 
+    onSongClick: (Song) -> Unit,
+    onArtistClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -230,7 +239,8 @@ private fun SearchResultItem(song: Song, onSongClick: (Song) -> Unit) {
             Text(
                 text = song.artistName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clickable { onArtistClick() }
             )
         }
     }

@@ -180,12 +180,138 @@ class RemoteMusicDataSource : MusicDataSource {
         TODO("Implement artist search")
     }
 
-    override suspend fun getSongsByArtist(artistId: String): List<Song> {
-        TODO("Implement artist songs")
+    override suspend fun getSongsByArtist(artistId: String): List<Song> = withContext(Dispatchers.IO) {
+        if (artistId.isBlank()) return@withContext emptyList()
+
+        val results = mutableListOf<Song>()
+        try {
+            val appName = URLEncoder.encode(BuildConfig.AUDIUS_APP_NAME, "UTF-8")
+            val urlString = "$baseUrl/users/$artistId/tracks?app_name=$appName"
+
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                val responseString = reader.use { it.readText() }
+                val jsonObject = JSONObject(responseString)
+                
+                if (jsonObject.has("data")) {
+                    val dataArray = jsonObject.getJSONArray("data")
+                    for (i in 0 until dataArray.length()) {
+                        val trackObj = dataArray.getJSONObject(i)
+                        
+                        val id = trackObj.optString("id")
+                        val title = trackObj.optString("title")
+                        val durationSec = trackObj.optInt("duration", 0)
+                        
+                        // Parse user
+                        var trackArtistId = artistId
+                        var artistName = "Unknown Artist"
+                        if (trackObj.has("user")) {
+                            val userObj = trackObj.getJSONObject("user")
+                            trackArtistId = userObj.optString("id")
+                            artistName = userObj.optString("name", "Unknown Artist")
+                        }
+                        
+                        // Parse artwork
+                        var artworkUrl: String? = null
+                        if (trackObj.has("artwork")) {
+                            val artworkObj = trackObj.optJSONObject("artwork")
+                            if (artworkObj != null) {
+                                artworkUrl = artworkObj.optString("480x480", "")
+                                if (artworkUrl.isEmpty()) {
+                                    artworkUrl = artworkObj.optString("150x150", "")
+                                }
+                                if (artworkUrl.isEmpty()) {
+                                    artworkUrl = null
+                                }
+                            }
+                        }
+                        
+                        if (id.isNotBlank() && title.isNotBlank()) {
+                            val streamUrl = "$baseUrl/tracks/$id/stream?app_name=$appName"
+                            
+                            results.add(
+                                Song(
+                                    id = id,
+                                    title = title,
+                                    artistId = trackArtistId,
+                                    artistName = artistName,
+                                    durationMs = durationSec * 1000L,
+                                    artworkUrl = artworkUrl,
+                                    mediaUrl = streamUrl
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            connection.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
+        results
     }
 
-    override suspend fun getArtist(artistId: String): Artist? {
-        TODO("Implement artist lookup")
+    override suspend fun getArtist(artistId: String): Artist? = withContext(Dispatchers.IO) {
+        if (artistId.isBlank()) return@withContext null
+        
+        try {
+            val appName = URLEncoder.encode(BuildConfig.AUDIUS_APP_NAME, "UTF-8")
+            val urlString = "$baseUrl/users/$artistId?app_name=$appName"
+
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                val responseString = reader.use { it.readText() }
+                val jsonObject = JSONObject(responseString)
+                
+                if (jsonObject.has("data")) {
+                    val userObj = jsonObject.getJSONObject("data")
+                    val id = userObj.optString("id")
+                    val name = userObj.optString("name", "Unknown Artist")
+                    val bio = userObj.optString("bio", "")
+                    val finalBio = if (bio.isBlank()) null else bio
+                    
+                    var imageUrl: String? = null
+                    if (userObj.has("profile_picture")) {
+                        val profilePicObj = userObj.optJSONObject("profile_picture")
+                        if (profilePicObj != null) {
+                            imageUrl = profilePicObj.optString("480x480", "")
+                            if (imageUrl.isEmpty()) {
+                                imageUrl = profilePicObj.optString("150x150", "")
+                            }
+                            if (imageUrl.isEmpty()) {
+                                imageUrl = null
+                            }
+                        }
+                    }
+                    
+                    if (id.isNotBlank()) {
+                        return@withContext Artist(
+                            id = id,
+                            name = name,
+                            imageUrl = imageUrl,
+                            genre = finalBio
+                        )
+                    }
+                }
+            }
+            connection.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return@withContext null
     }
 
     override suspend fun toggleLike(songId: String) {

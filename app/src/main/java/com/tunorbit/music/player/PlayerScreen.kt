@@ -53,7 +53,8 @@ import java.util.Locale
 @Composable
 fun PlayerScreen(
     viewModel: PlayerViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onArtistClick: (String) -> Unit
 ) {
     val song by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
@@ -148,7 +149,8 @@ fun PlayerScreen(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable { onArtistClick(song!!.artistId) }
                 )
             }
 
