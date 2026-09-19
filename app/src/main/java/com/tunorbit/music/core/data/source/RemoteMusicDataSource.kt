@@ -515,4 +515,6 @@ class RemoteMusicDataSource : MusicDataSource {
     override suspend fun addRecentSearch(query: String) {}
 
     override suspend fun clearRecentSearches() {}
+
+    override suspend fun cacheSong(song: Song) {}
 }

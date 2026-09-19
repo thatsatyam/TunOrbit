@@ -15,7 +15,10 @@ class DefaultMusicRepository(
     override suspend fun searchSongs(query: String): List<Song> {
         return try {
             val results = remoteDataSource.searchSongs(query)
-            if (results.isNotEmpty()) results else localDataSource.searchSongs(query)
+            if (results.isNotEmpty()) {
+                results.forEach { localDataSource.cacheSong(it) }
+                results
+            } else localDataSource.searchSongs(query)
         } catch (e: Exception) {
             localDataSource.searchSongs(query)
         }
@@ -26,11 +29,23 @@ class DefaultMusicRepository(
     }
 
     override suspend fun getSongsByArtist(artistId: String): List<Song> {
-        return localDataSource.getSongsByArtist(artistId)
+        return try {
+            val results = remoteDataSource.getSongsByArtist(artistId)
+            if (results.isNotEmpty()) {
+                results.forEach { localDataSource.cacheSong(it) }
+                results
+            } else localDataSource.getSongsByArtist(artistId)
+        } catch (e: Exception) {
+            localDataSource.getSongsByArtist(artistId)
+        }
     }
 
     override suspend fun getArtist(artistId: String): Artist? {
-        return localDataSource.getArtist(artistId)
+        return try {
+            remoteDataSource.getArtist(artistId) ?: localDataSource.getArtist(artistId)
+        } catch (e: Exception) {
+            localDataSource.getArtist(artistId)
+        }
     }
 
     override suspend fun toggleLike(songId: String) {
@@ -92,7 +107,10 @@ class DefaultMusicRepository(
     override suspend fun getSongsByAlbum(albumId: String): List<Song> {
         return try {
             val results = remoteDataSource.getSongsByAlbum(albumId)
-            if (results.isNotEmpty()) results else localDataSource.getSongsByAlbum(albumId)
+            if (results.isNotEmpty()) {
+                results.forEach { localDataSource.cacheSong(it) }
+                results
+            } else localDataSource.getSongsByAlbum(albumId)
         } catch (e: Exception) {
             localDataSource.getSongsByAlbum(albumId)
         }
@@ -117,9 +135,16 @@ class DefaultMusicRepository(
     override suspend fun getDiscoverSongs(): List<Song> {
         return try {
             val results = remoteDataSource.getDiscoverSongs()
-            if (results.isNotEmpty()) results else localDataSource.getDiscoverSongs()
+            if (results.isNotEmpty()) {
+                results.forEach { localDataSource.cacheSong(it) }
+                results
+            } else localDataSource.getDiscoverSongs()
         } catch (e: Exception) {
             localDataSource.getDiscoverSongs()
         }
+    }
+
+    override suspend fun cacheSong(song: Song) {
+        localDataSource.cacheSong(song)
     }
 }

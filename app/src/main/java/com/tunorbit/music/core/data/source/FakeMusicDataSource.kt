@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
 
 class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSource {
 
@@ -116,7 +117,7 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
 
     override fun observeLikedSongs(): Flow<List<Song>> {
         return _likedSongIds.map { ids ->
-            baseSongs.filter { ids.contains(it.id) }.map { it.copy(isLiked = true) }
+            ids.mapNotNull { getCachedSong(it) }.map { it.copy(isLiked = true) }
         }
     }
 
@@ -142,7 +143,7 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
 
     override fun observeRecentSongs(): Flow<List<Song>> {
         return combine(_recentSongIds, _likedSongIds) { recentIds, likedIds ->
-            recentIds.mapNotNull { id -> baseSongs.find { it.id == id } }
+            recentIds.mapNotNull { id -> getCachedSong(id) }
                .map { song -> song.copy(isLiked = likedIds.contains(song.id)) }
         }
     }
@@ -192,7 +193,7 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
     override fun observePlaylistSongs(playlistId: String): Flow<List<Song>> {
         return combine(_playlists, _likedSongIds) { playlists, likedIds ->
             val p = playlists.find { it.id == playlistId }
-            p?.songIds?.mapNotNull { id -> baseSongs.find { it.id == id } }
+            p?.songIds?.mapNotNull { id -> getCachedSong(id) }
                 ?.map { song -> song.copy(isLiked = likedIds.contains(song.id)) }
                 ?: emptyList()
         }
@@ -200,7 +201,17 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
 
     override suspend fun getAllSongs(): List<Song> {
         val liked = _likedSongIds.value
-        return baseSongs.map { it.copy(isLiked = liked.contains(it.id)) }
+        val cachedSongs = prefs.all.keys
+            .filter { it.startsWith("song_cache_") }
+            .mapNotNull { key -> 
+                val id = key.removePrefix("song_cache_")
+                getCachedSong(id)
+            }
+        
+        val allMap = baseSongs.associateBy { it.id }.toMutableMap()
+        cachedSongs.forEach { allMap[it.id] = it }
+        
+        return allMap.values.map { it.copy(isLiked = liked.contains(it.id)) }
     }
 
     override suspend fun getAlbums(): List<Album> {
@@ -245,6 +256,48 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
     override suspend fun clearRecentSearches() {
         prefs.edit().remove("recent_searches").apply()
         _recentSearches.value = emptyList()
+    }
+
+    override suspend fun cacheSong(song: Song) {
+        val json = JSONObject().apply {
+            put("id", song.id)
+            put("title", song.title)
+            put("artistId", song.artistId)
+            put("artistName", song.artistName)
+            song.albumId?.let { put("albumId", it) }
+            song.albumName?.let { put("albumName", it) }
+            put("durationMs", song.durationMs)
+            song.artworkUrl?.let { put("artworkUrl", it) }
+            song.language?.let { put("language", it) }
+            song.releaseYear?.let { put("releaseYear", it) }
+            put("mediaUrl", song.mediaUrl)
+        }.toString()
+        prefs.edit().putString("song_cache_${song.id}", json).apply()
+    }
+
+    private fun getCachedSong(id: String): Song? {
+        val jsonStr = prefs.getString("song_cache_$id", null)
+        if (jsonStr != null) {
+            try {
+                val obj = JSONObject(jsonStr)
+                return Song(
+                    id = obj.getString("id"),
+                    title = obj.getString("title"),
+                    artistId = obj.getString("artistId"),
+                    artistName = obj.getString("artistName"),
+                    albumId = obj.optString("albumId", "").takeIf { it.isNotEmpty() },
+                    albumName = obj.optString("albumName", "").takeIf { it.isNotEmpty() },
+                    durationMs = obj.getLong("durationMs"),
+                    artworkUrl = obj.optString("artworkUrl", "").takeIf { it.isNotEmpty() },
+                    language = obj.optString("language", "").takeIf { it.isNotEmpty() },
+                    releaseYear = if (obj.has("releaseYear")) obj.getInt("releaseYear") else null,
+                    mediaUrl = obj.getString("mediaUrl")
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return baseSongs.find { it.id == id }
     }
 
     override suspend fun getDiscoverSongs(): List<Song> {

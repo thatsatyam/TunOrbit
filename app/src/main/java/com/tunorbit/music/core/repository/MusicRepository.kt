@@ -53,4 +53,6 @@ interface MusicRepository {
     suspend fun clearRecentSearches()
 
     suspend fun getDiscoverSongs(): List<Song>
+
+    suspend fun cacheSong(song: Song)
 }
