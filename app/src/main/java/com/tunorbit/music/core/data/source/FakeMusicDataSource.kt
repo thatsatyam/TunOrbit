@@ -21,6 +21,10 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
         prefs.getString("recent_songs", "")?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
     )
 
+    private val _recentSearches = MutableStateFlow<List<String>>(
+        prefs.getString("recent_searches", "")?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+    )
+
     private val _playlists = MutableStateFlow<List<Playlist>>(loadPlaylistsFromPrefs())
 
     private fun loadPlaylistsFromPrefs(): List<Playlist> {
@@ -205,5 +209,21 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
 
     override suspend fun getArtists(): List<Artist> {
         return emptyList() // Will be implemented with data later
+    }
+
+    override fun observeRecentSearches(): Flow<List<String>> = _recentSearches.asStateFlow()
+
+    override suspend fun addRecentSearch(query: String) {
+        val current = _recentSearches.value.toMutableList()
+        current.remove(query)
+        current.add(0, query)
+        val trimmed = current.take(10)
+        prefs.edit().putString("recent_searches", trimmed.joinToString(",")).apply()
+        _recentSearches.value = trimmed
+    }
+
+    override suspend fun clearRecentSearches() {
+        prefs.edit().remove("recent_searches").apply()
+        _recentSearches.value = emptyList()
     }
 }

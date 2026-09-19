@@ -8,74 +8,92 @@ import com.tunorbit.music.core.model.Song
 import kotlinx.coroutines.flow.Flow
 
 class DefaultMusicRepository(
-    private val dataSource: MusicDataSource
+    private val localDataSource: MusicDataSource,
+    private val remoteDataSource: MusicDataSource
 ) : MusicRepository {
 
     override suspend fun searchSongs(query: String): List<Song> {
-        return dataSource.searchSongs(query)
+        return try {
+            val results = remoteDataSource.searchSongs(query)
+            if (results.isNotEmpty()) results else localDataSource.searchSongs(query)
+        } catch (e: Exception) {
+            localDataSource.searchSongs(query)
+        }
     }
 
     override suspend fun searchArtists(query: String): List<Artist> {
-        return dataSource.searchArtists(query)
+        return localDataSource.searchArtists(query)
     }
 
     override suspend fun getSongsByArtist(artistId: String): List<Song> {
-        return dataSource.getSongsByArtist(artistId)
+        return localDataSource.getSongsByArtist(artistId)
     }
 
     override suspend fun getArtist(artistId: String): Artist? {
-        return dataSource.getArtist(artistId)
+        return localDataSource.getArtist(artistId)
     }
 
     override suspend fun toggleLike(songId: String) {
-        dataSource.toggleLike(songId)
+        localDataSource.toggleLike(songId)
     }
 
     override fun observeLikedSongs(): Flow<List<Song>> {
-        return dataSource.observeLikedSongs()
+        return localDataSource.observeLikedSongs()
     }
 
     override suspend fun addRecentSong(songId: String) {
-        dataSource.addRecentSong(songId)
+        localDataSource.addRecentSong(songId)
     }
 
     override fun observeRecentSongs(): Flow<List<Song>> {
-        return dataSource.observeRecentSongs()
+        return localDataSource.observeRecentSongs()
     }
 
     override fun observePlaylists(): Flow<List<Playlist>> {
-        return dataSource.observePlaylists()
+        return localDataSource.observePlaylists()
     }
 
     override suspend fun createPlaylist(name: String) {
-        dataSource.createPlaylist(name)
+        localDataSource.createPlaylist(name)
     }
 
     override suspend fun deletePlaylist(playlistId: String) {
-        dataSource.deletePlaylist(playlistId)
+        localDataSource.deletePlaylist(playlistId)
     }
 
     override suspend fun addSongToPlaylist(playlistId: String, songId: String) {
-        dataSource.addSongToPlaylist(playlistId, songId)
+        localDataSource.addSongToPlaylist(playlistId, songId)
     }
 
     override suspend fun removeSongFromPlaylist(playlistId: String, songId: String) {
-        dataSource.removeSongFromPlaylist(playlistId, songId)
+        localDataSource.removeSongFromPlaylist(playlistId, songId)
     }
 
     override fun observePlaylistSongs(playlistId: String): Flow<List<Song>> {
-        return dataSource.observePlaylistSongs(playlistId)
+        return localDataSource.observePlaylistSongs(playlistId)
     }
 
     override suspend fun getAllSongs(): List<Song> {
-        return dataSource.getAllSongs()
+        return localDataSource.getAllSongs()
     }
 
     override suspend fun getAlbums(): List<Album> {
-        return dataSource.getAlbums()
+        return localDataSource.getAlbums()
     }
 
     override suspend fun getArtists(): List<Artist> {
-        return dataSource.getArtists()
+        return localDataSource.getArtists()
+    }
+
+    override fun observeRecentSearches(): Flow<List<String>> {
+        return localDataSource.observeRecentSearches()
+    }
+
+    override suspend fun addRecentSearch(query: String) {
+        localDataSource.addRecentSearch(query)
+    }
+
+    override suspend fun clearRecentSearches() {
+        localDataSource.clearRecentSearches()
     }
 }

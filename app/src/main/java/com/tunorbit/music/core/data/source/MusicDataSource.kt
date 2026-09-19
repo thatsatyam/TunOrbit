@@ -41,4 +41,10 @@ interface MusicDataSource {
     suspend fun getAlbums(): List<Album>
     
     suspend fun getArtists(): List<Artist>
+
+    fun observeRecentSearches(): Flow<List<String>>
+
+    suspend fun addRecentSearch(query: String)
+
+    suspend fun clearRecentSearches()
 }

@@ -17,6 +17,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        val audiusApiKey: String = project.findProperty("AUDIUS_API_KEY") as? String ?: ""
+        buildConfigField("String", "AUDIUS_API_KEY", "\"$audiusApiKey\"")
+        buildConfigField("String", "AUDIUS_APP_NAME", "\"TunOrbit\"")
     }
 
     buildTypes {
@@ -32,6 +36,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

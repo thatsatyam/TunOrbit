@@ -6,6 +6,7 @@ import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import com.tunorbit.music.core.data.source.FakeMusicDataSource
 import com.tunorbit.music.core.data.source.MusicDataSource
+import com.tunorbit.music.core.data.source.RemoteMusicDataSource
 import com.tunorbit.music.core.repository.DefaultMusicRepository
 import com.tunorbit.music.core.repository.MusicRepository
 
@@ -27,11 +28,15 @@ class AppContainer(private val context: Context) {
         context.getSharedPreferences("tunorbit_prefs", Context.MODE_PRIVATE)
     }
 
-    private val musicDataSource: MusicDataSource by lazy { 
+    private val localMusicDataSource: MusicDataSource by lazy { 
         FakeMusicDataSource(sharedPreferences) 
     }
 
+    private val remoteMusicDataSource: MusicDataSource by lazy {
+        RemoteMusicDataSource()
+    }
+
     val musicRepository: MusicRepository by lazy {
-        DefaultMusicRepository(musicDataSource)
+        DefaultMusicRepository(localMusicDataSource, remoteMusicDataSource)
     }
 }
