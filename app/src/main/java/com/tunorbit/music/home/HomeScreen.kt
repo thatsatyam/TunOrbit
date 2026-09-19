@@ -44,7 +44,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     onSongClick: (Song, List<Song>) -> Unit,
-    onArtistClick: (String) -> Unit
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String?) -> Unit
 ) {
     val songs = viewModel.songs.collectAsState()
     val discoverSongs = viewModel.discoverSongs.collectAsState()
@@ -85,7 +86,8 @@ fun HomeScreen(
                 song = song,
                 modifier = Modifier.padding(horizontal = 20.dp),
                 onSongClick = { s -> onSongClick(s, listOf(s)) },
-                onArtistClick = { onArtistClick(song.artistId) }
+                onArtistClick = { onArtistClick(song.artistId) },
+                onAlbumClick = { onAlbumClick(song.albumId) }
             )
         }
 
@@ -97,7 +99,8 @@ fun HomeScreen(
                 subtitle = "Trending tracks right now",
                 songs = discoverSongs.value,
                 onSongClick = { s -> onSongClick(s, discoverSongs.value) },
-                onArtistClick = onArtistClick
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -111,7 +114,8 @@ fun HomeScreen(
                 subtitle = "A few tracks to get you started",
                 songs = songs.value,
                 onSongClick = { s -> onSongClick(s, songs.value) },
-                onArtistClick = onArtistClick
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -121,7 +125,8 @@ fun HomeScreen(
                 subtitle = "Pick up where you left off",
                 songs = songs.value,
                 onSongClick = { s -> onSongClick(s, songs.value) },
-                onArtistClick = onArtistClick
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -131,7 +136,8 @@ fun HomeScreen(
                 subtitle = "Based on what you enjoy",
                 songs = songs.value,
                 onSongClick = { s -> onSongClick(s, songs.value) },
-                onArtistClick = onArtistClick
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -141,7 +147,8 @@ fun HomeScreen(
                 subtitle = "Fresh music worth exploring",
                 songs = songs.value,
                 onSongClick = { s -> onSongClick(s, songs.value) },
-                onArtistClick = onArtistClick
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick
             )
         }
     }
@@ -179,7 +186,8 @@ private fun PlayForMeCard(
     song: Song,
     modifier: Modifier = Modifier,
     onSongClick: (Song) -> Unit,
-    onArtistClick: () -> Unit
+    onArtistClick: () -> Unit,
+    onAlbumClick: () -> Unit
 ) {
     Card(
         onClick = { onSongClick(song) },
@@ -210,6 +218,7 @@ private fun PlayForMeCard(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(RoundedCornerShape(16.dp))
+                        .clickable { onAlbumClick() }
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -271,7 +280,8 @@ private fun HomeSection(
     songs: List<Song>,
     modifier: Modifier = Modifier,
     onSongClick: (Song) -> Unit,
-    onArtistClick: (String) -> Unit
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String?) -> Unit
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth()
@@ -313,7 +323,8 @@ private fun HomeSection(
                         sectionTitle = title,
                         cardWidth = cardWidth,
                         onSongClick = onSongClick,
-                        onArtistClick = { onArtistClick(song.artistId) }
+                        onArtistClick = { onArtistClick(song.artistId) },
+                        onAlbumClick = { onAlbumClick(song.albumId) }
                     )
                 }
             }
@@ -328,7 +339,8 @@ private fun SongCard(
     sectionTitle: String,
     cardWidth: Dp,
     onSongClick: (Song) -> Unit,
-    onArtistClick: () -> Unit
+    onArtistClick: () -> Unit,
+    onAlbumClick: () -> Unit
 ) {
         Column(
         modifier = Modifier
@@ -342,6 +354,7 @@ private fun SongCard(
                 .fillMaxWidth()
                 .height(cardWidth)
                 .clip(RoundedCornerShape(16.dp))
+                .clickable { onAlbumClick() }
                 .background(
                     when (index % 3) {
                         0 -> MaterialTheme.colorScheme.primaryContainer

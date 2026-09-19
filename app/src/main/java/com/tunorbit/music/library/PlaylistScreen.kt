@@ -53,7 +53,9 @@ fun PlaylistScreen(
     viewModel: PlaylistViewModel,
     onSongClick: (Song, List<Song>) -> Unit,
     onBackClick: () -> Unit,
-    onDeleted: () -> Unit
+    onDeleted: () -> Unit,
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String?) -> Unit
 ) {
     val playlist by viewModel.playlist.collectAsState()
     val songs by viewModel.songs.collectAsState()
@@ -114,6 +116,8 @@ fun PlaylistScreen(
                         song = song,
                         onSongClick = { s -> onSongClick(s, songs) },
                         onRemoveClick = { viewModel.removeSong(song.id) },
+                        onArtistClick = { onArtistClick(song.artistId) },
+                        onAlbumClick = { onAlbumClick(song.albumId) },
                         modifier = Modifier.padding(horizontal = 20.dp)
                     )
                 }
@@ -188,6 +192,8 @@ private fun PlaylistSongItem(
     song: Song,
     onSongClick: (Song) -> Unit,
     onRemoveClick: () -> Unit,
+    onArtistClick: () -> Unit,
+    onAlbumClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -202,6 +208,7 @@ private fun PlaylistSongItem(
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(8.dp))
+                .clickable { onAlbumClick() }
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
@@ -238,7 +245,8 @@ private fun PlaylistSongItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { onArtistClick() }
             )
         }
 

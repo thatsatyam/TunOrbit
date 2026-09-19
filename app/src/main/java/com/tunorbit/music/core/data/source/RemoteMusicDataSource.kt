@@ -354,6 +354,156 @@ class RemoteMusicDataSource : MusicDataSource {
         return emptyList()
     }
 
+    override suspend fun getAlbum(albumId: String): Album? = withContext(Dispatchers.IO) {
+        if (albumId.isBlank()) return@withContext null
+        
+        try {
+            val appName = URLEncoder.encode(BuildConfig.AUDIUS_APP_NAME, "UTF-8")
+            val urlString = "$baseUrl/playlists/$albumId?app_name=$appName"
+
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                val responseString = reader.use { it.readText() }
+                val jsonObject = JSONObject(responseString)
+                
+                if (jsonObject.has("data")) {
+                    val dataArray = jsonObject.getJSONArray("data")
+                    if (dataArray.length() > 0) {
+                        val albumObj = dataArray.getJSONObject(0)
+                        
+                        val id = albumObj.optString("id")
+                        val title = albumObj.optString("playlist_name", "Unknown Album")
+                        val trackCount = albumObj.optInt("track_count", 0)
+                        
+                        // Parse user
+                        var artistId = ""
+                        var artistName = "Unknown Artist"
+                        if (albumObj.has("user")) {
+                            val userObj = albumObj.getJSONObject("user")
+                            artistId = userObj.optString("id")
+                            artistName = userObj.optString("name", "Unknown Artist")
+                        }
+                        
+                        // Parse artwork
+                        var artworkUrl: String? = null
+                        if (albumObj.has("artwork")) {
+                            val artworkObj = albumObj.optJSONObject("artwork")
+                            if (artworkObj != null) {
+                                artworkUrl = artworkObj.optString("480x480", "")
+                                if (artworkUrl.isEmpty()) {
+                                    artworkUrl = artworkObj.optString("150x150", "")
+                                }
+                                if (artworkUrl.isEmpty()) {
+                                    artworkUrl = null
+                                }
+                            }
+                        }
+                        
+                        if (id.isNotBlank()) {
+                            return@withContext Album(
+                                id = id,
+                                title = title,
+                                artistId = artistId,
+                                artistName = artistName,
+                                artworkUrl = artworkUrl,
+                                trackCount = trackCount
+                            )
+                        }
+                    }
+                }
+            }
+            connection.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return@withContext null
+    }
+
+    override suspend fun getSongsByAlbum(albumId: String): List<Song> = withContext(Dispatchers.IO) {
+        if (albumId.isBlank()) return@withContext emptyList()
+
+        val results = mutableListOf<Song>()
+        try {
+            val appName = URLEncoder.encode(BuildConfig.AUDIUS_APP_NAME, "UTF-8")
+            val urlString = "$baseUrl/playlists/$albumId/tracks?app_name=$appName"
+
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                val responseString = reader.use { it.readText() }
+                val jsonObject = JSONObject(responseString)
+                
+                if (jsonObject.has("data")) {
+                    val dataArray = jsonObject.getJSONArray("data")
+                    for (i in 0 until dataArray.length()) {
+                        val trackObj = dataArray.getJSONObject(i)
+                        
+                        val id = trackObj.optString("id")
+                        val title = trackObj.optString("title")
+                        val durationSec = trackObj.optInt("duration", 0)
+                        
+                        // Parse user
+                        var artistId = ""
+                        var artistName = "Unknown Artist"
+                        if (trackObj.has("user")) {
+                            val userObj = trackObj.getJSONObject("user")
+                            artistId = userObj.optString("id")
+                            artistName = userObj.optString("name", "Unknown Artist")
+                        }
+                        
+                        // Parse artwork
+                        var artworkUrl: String? = null
+                        if (trackObj.has("artwork")) {
+                            val artworkObj = trackObj.optJSONObject("artwork")
+                            if (artworkObj != null) {
+                                artworkUrl = artworkObj.optString("480x480", "")
+                                if (artworkUrl.isEmpty()) {
+                                    artworkUrl = artworkObj.optString("150x150", "")
+                                }
+                                if (artworkUrl.isEmpty()) {
+                                    artworkUrl = null
+                                }
+                            }
+                        }
+                        
+                        if (id.isNotBlank() && title.isNotBlank()) {
+                            val streamUrl = "$baseUrl/tracks/$id/stream?app_name=$appName"
+                            
+                            results.add(
+                                Song(
+                                    id = id,
+                                    title = title,
+                                    artistId = artistId,
+                                    artistName = artistName,
+                                    albumId = albumId,
+                                    durationMs = durationSec * 1000L,
+                                    artworkUrl = artworkUrl,
+                                    mediaUrl = streamUrl
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            connection.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
+        results
+    }
+
     override suspend fun getArtists(): List<Artist> {
         return emptyList()
     }

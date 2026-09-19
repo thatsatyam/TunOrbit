@@ -33,6 +33,8 @@ import com.tunorbit.music.library.PlaylistScreen
 import com.tunorbit.music.library.PlaylistViewModel
 import com.tunorbit.music.library.ArtistScreen
 import com.tunorbit.music.library.ArtistViewModel
+import com.tunorbit.music.library.AlbumScreen
+import com.tunorbit.music.library.AlbumViewModel
 import com.tunorbit.music.player.MiniPlayer
 import com.tunorbit.music.player.PlayerScreen
 import com.tunorbit.music.player.PlayerViewModel
@@ -62,7 +64,8 @@ fun TunOrbitApp(
     libraryViewModel: LibraryViewModel,
     playerViewModel: PlayerViewModel,
     playlistViewModel: PlaylistViewModel,
-    artistViewModel: ArtistViewModel
+    artistViewModel: ArtistViewModel,
+    albumViewModel: AlbumViewModel
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -141,6 +144,13 @@ fun TunOrbitApp(
                         navController.navigate("artist/$artistId") {
                             launchSingleTop = true
                         }
+                    },
+                    onAlbumClick = { albumId ->
+                        if (albumId != null) {
+                            navController.navigate("album/$albumId") {
+                                launchSingleTop = true
+                            }
+                        }
                     }
                 )
             }
@@ -158,6 +168,13 @@ fun TunOrbitApp(
                         navController.navigate("artist/$artistId") {
                             launchSingleTop = true
                         }
+                    },
+                    onAlbumClick = { albumId ->
+                        if (albumId != null) {
+                            navController.navigate("album/$albumId") {
+                                launchSingleTop = true
+                            }
+                        }
                     }
                 )
             }
@@ -173,6 +190,18 @@ fun TunOrbitApp(
                     onPlaylistClick = { playlistId ->
                         navController.navigate("playlist/$playlistId") {
                             launchSingleTop = true
+                        }
+                    },
+                    onArtistClick = { artistId ->
+                        navController.navigate("artist/$artistId") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlbumClick = { albumId ->
+                        if (albumId != null) {
+                            navController.navigate("album/$albumId") {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 )
@@ -191,7 +220,19 @@ fun TunOrbitApp(
                         }
                     },
                     onBackClick = { navController.popBackStack() },
-                    onDeleted = { navController.popBackStack() }
+                    onDeleted = { navController.popBackStack() },
+                    onArtistClick = { artistId ->
+                        navController.navigate("artist/$artistId") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlbumClick = { albumId ->
+                        if (albumId != null) {
+                            navController.navigate("album/$albumId") {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 )
             }
             composable("artist/{artistId}") { backStackEntry ->
@@ -207,7 +248,35 @@ fun TunOrbitApp(
                             launchSingleTop = true
                         }
                     },
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onAlbumClick = { albumId ->
+                        if (albumId != null) {
+                            navController.navigate("album/$albumId") {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                )
+            }
+            composable("album/{albumId}") { backStackEntry ->
+                val albumId = backStackEntry.arguments?.getString("albumId") ?: return@composable
+                LaunchedEffect(albumId) {
+                    albumViewModel.loadAlbum(albumId)
+                }
+                AlbumScreen(
+                    viewModel = albumViewModel,
+                    onSongClick = { song, queue ->
+                        playerViewModel.playQueue(queue, queue.indexOf(song).coerceAtLeast(0))
+                        navController.navigate("player") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onBackClick = { navController.popBackStack() },
+                    onArtistClick = { artistId ->
+                        navController.navigate("artist/$artistId") {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
             composable("player") {
@@ -219,6 +288,13 @@ fun TunOrbitApp(
                         // but usually it's pushed on top
                         navController.navigate("artist/$artistId") {
                             launchSingleTop = true
+                        }
+                    },
+                    onAlbumClick = { albumId ->
+                        if (albumId != null) {
+                            navController.navigate("album/$albumId") {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 )

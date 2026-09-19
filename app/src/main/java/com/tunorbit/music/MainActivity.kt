@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import com.tunorbit.music.home.HomeViewModel
 import com.tunorbit.music.home.HomeViewModelFactory
+import com.tunorbit.music.library.AlbumViewModel
+import com.tunorbit.music.library.AlbumViewModelFactory
 import com.tunorbit.music.library.ArtistViewModel
 import com.tunorbit.music.library.ArtistViewModelFactory
 import com.tunorbit.music.library.LibraryViewModel
@@ -52,6 +54,11 @@ class MainActivity : ComponentActivity() {
             .create(ArtistViewModel::class.java)
     }
 
+    private val albumViewModel by lazy {
+        AlbumViewModelFactory(appContainer.musicRepository)
+            .create(AlbumViewModel::class.java)
+    }
+
     private val playerViewModel by lazy {
         PlayerViewModelFactory(appContainer.exoPlayer, appContainer.musicRepository)
             .create(PlayerViewModel::class.java)
@@ -70,7 +77,8 @@ class MainActivity : ComponentActivity() {
                     libraryViewModel = libraryViewModel,
                     playerViewModel = playerViewModel,
                     playlistViewModel = playlistViewModel,
-                    artistViewModel = artistViewModel
+                    artistViewModel = artistViewModel,
+                    albumViewModel = albumViewModel
                 )
             }
         }

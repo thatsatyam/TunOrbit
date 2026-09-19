@@ -49,7 +49,8 @@ fun SearchScreen(
     viewModel: SearchViewModel,
     onSongClick: (Song, List<Song>) -> Unit,
     onBackClick: () -> Unit,
-    onArtistClick: (String) -> Unit
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String?) -> Unit
 ) {
     val query by viewModel.searchQuery.collectAsState()
     val results by viewModel.searchResults.collectAsState()
@@ -179,7 +180,8 @@ fun SearchScreen(
                                     viewModel.addRecentSearch(query)
                                     onSongClick(s, results) 
                                 },
-                                onArtistClick = { onArtistClick(song.artistId) }
+                                onArtistClick = { onArtistClick(song.artistId) },
+                                onAlbumClick = { onAlbumClick(song.albumId) }
                             )
                         }
                     }
@@ -193,7 +195,8 @@ fun SearchScreen(
 private fun SearchResultItem(
     song: Song, 
     onSongClick: (Song) -> Unit,
-    onArtistClick: () -> Unit
+    onArtistClick: () -> Unit,
+    onAlbumClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -207,6 +210,7 @@ private fun SearchResultItem(
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(8.dp))
+                .clickable { onAlbumClick() }
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {

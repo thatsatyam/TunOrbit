@@ -40,6 +40,10 @@ interface MusicRepository {
 
     suspend fun getAlbums(): List<Album>
 
+    suspend fun getAlbum(albumId: String): Album?
+
+    suspend fun getSongsByAlbum(albumId: String): List<Song>
+
     suspend fun getArtists(): List<Artist>
 
     fun observeRecentSearches(): Flow<List<String>>

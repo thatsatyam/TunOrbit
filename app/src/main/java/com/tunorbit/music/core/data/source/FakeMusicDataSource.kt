@@ -207,6 +207,26 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
         return emptyList() // Will be implemented with data later
     }
 
+    override suspend fun getAlbum(albumId: String): Album? {
+        val songWithAlbum = baseSongs.find { it.albumId == albumId }
+        return if (songWithAlbum != null && songWithAlbum.albumName != null) {
+            Album(
+                id = albumId,
+                title = songWithAlbum.albumName,
+                artistId = songWithAlbum.artistId,
+                artistName = songWithAlbum.artistName,
+                artworkUrl = songWithAlbum.artworkUrl,
+                releaseYear = songWithAlbum.releaseYear,
+                trackCount = baseSongs.count { it.albumId == albumId }
+            )
+        } else null
+    }
+
+    override suspend fun getSongsByAlbum(albumId: String): List<Song> {
+        val likedIds = _likedSongIds.value
+        return baseSongs.filter { it.albumId == albumId }.map { it.copy(isLiked = likedIds.contains(it.id)) }
+    }
+
     override suspend fun getArtists(): List<Artist> {
         return emptyList() // Will be implemented with data later
     }

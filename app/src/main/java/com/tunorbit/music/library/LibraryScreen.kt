@@ -49,7 +49,9 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel,
     onSongClick: (Song, List<Song>) -> Unit,
-    onPlaylistClick: (String) -> Unit
+    onPlaylistClick: (String) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String?) -> Unit
 ) {
     val recentSongs by viewModel.recentSongs.collectAsState()
     val likedSongs by viewModel.likedSongs.collectAsState()
@@ -148,7 +150,9 @@ fun LibraryScreen(
                             song = song,
                             index = index,
                             cardWidth = 140.dp,
-                            onSongClick = { s -> onSongClick(s, recentSongs) }
+                            onSongClick = { s -> onSongClick(s, recentSongs) },
+                            onArtistClick = { onArtistClick(song.artistId) },
+                            onAlbumClick = { onAlbumClick(song.albumId) }
                         )
                     }
                 }
@@ -175,6 +179,8 @@ fun LibraryScreen(
             LibrarySongListItem(
                 song = song,
                 onSongClick = { s -> onSongClick(s, likedSongs) },
+                onArtistClick = { onArtistClick(song.artistId) },
+                onAlbumClick = { onAlbumClick(song.albumId) },
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
         }
@@ -289,7 +295,9 @@ private fun LibrarySongCard(
     song: Song,
     index: Int,
     cardWidth: Dp,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    onArtistClick: () -> Unit,
+    onAlbumClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -303,6 +311,7 @@ private fun LibrarySongCard(
                 .fillMaxWidth()
                 .height(cardWidth)
                 .clip(RoundedCornerShape(16.dp))
+                .clickable { onAlbumClick() }
                 .background(
                     when (index % 3) {
                         0 -> MaterialTheme.colorScheme.tertiaryContainer
@@ -342,7 +351,8 @@ private fun LibrarySongCard(
             text = song.artistName,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.clickable { onArtistClick() }
         )
     }
 }
@@ -351,6 +361,8 @@ private fun LibrarySongCard(
 private fun LibrarySongListItem(
     song: Song,
     onSongClick: (Song) -> Unit,
+    onArtistClick: () -> Unit,
+    onAlbumClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -362,9 +374,9 @@ private fun LibrarySongListItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier
-                .size(56.dp)
+            modifier = Modifier.size(56.dp)
                 .clip(RoundedCornerShape(8.dp))
+                .clickable { onAlbumClick() }
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
@@ -401,7 +413,8 @@ private fun LibrarySongListItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { onArtistClick() }
             )
         }
     }

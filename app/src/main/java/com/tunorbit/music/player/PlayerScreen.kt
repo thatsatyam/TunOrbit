@@ -54,7 +54,8 @@ import java.util.Locale
 fun PlayerScreen(
     viewModel: PlayerViewModel,
     onBackClick: () -> Unit,
-    onArtistClick: (String) -> Unit
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String?) -> Unit
 ) {
     val song by viewModel.currentSong.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
@@ -107,6 +108,7 @@ fun PlayerScreen(
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(32.dp))
+                .clickable { onAlbumClick(song!!.albumId) }
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {

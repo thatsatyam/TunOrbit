@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -42,20 +42,20 @@ import com.tunorbit.music.core.model.Song
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArtistScreen(
-    viewModel: ArtistViewModel,
+fun AlbumScreen(
+    viewModel: AlbumViewModel,
     onSongClick: (Song, List<Song>) -> Unit,
     onBackClick: () -> Unit,
-    onAlbumClick: (String?) -> Unit
+    onArtistClick: (String) -> Unit
 ) {
-    val artist by viewModel.artist.collectAsState()
+    val album by viewModel.album.collectAsState()
     val songs by viewModel.songs.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(artist?.name ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text("Album", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -76,7 +76,7 @@ fun ArtistScreen(
             ) {
                 CircularProgressIndicator()
             }
-        } else if (artist != null) {
+        } else if (album != null) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -92,15 +92,16 @@ fun ArtistScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(160.dp)
-                                .clip(CircleShape)
+                                .fillMaxWidth(0.6f)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (artist?.imageUrl != null) {
+                            if (album?.artworkUrl != null) {
                                 AsyncImage(
-                                    model = artist!!.imageUrl,
-                                    contentDescription = "${artist!!.name} profile picture",
+                                    model = album!!.artworkUrl,
+                                    contentDescription = "${album!!.title} album artwork",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -113,29 +114,37 @@ fun ArtistScreen(
                             }
                         }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         
                         Text(
-                            text = artist!!.name,
+                            text = album!!.title,
                             style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                         
-                        if (artist!!.genre != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = album!!.artistName,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        if (album!!.releaseYear != null || album!!.trackCount != null) {
                             Spacer(modifier = Modifier.height(8.dp))
+                            val metadata = mutableListOf<String>()
+                            if (album!!.releaseYear != null) metadata.add(album!!.releaseYear.toString())
+                            if (album!!.trackCount != null) metadata.add("${album!!.trackCount} tracks")
+                            
                             Text(
-                                text = artist!!.genre!!,
+                                text = metadata.joinToString(" • "),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                     }
-                    
-                    Text(
-                        text = "Songs",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-                    )
                 }
 
                 if (songs.isEmpty()) {
@@ -149,10 +158,10 @@ fun ArtistScreen(
                     }
                 } else {
                     items(songs, key = { it.id }) { song ->
-                        ArtistSongItem(
+                        AlbumSongItem(
                             song = song,
                             onSongClick = { s -> onSongClick(s, songs) },
-                            onAlbumClick = { onAlbumClick(song.albumId) },
+                            onArtistClick = { onArtistClick(song.artistId) },
                             modifier = Modifier.padding(horizontal = 20.dp)
                         )
                     }
@@ -166,7 +175,7 @@ fun ArtistScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Artist not found.",
+                    text = "Album not found.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -176,10 +185,10 @@ fun ArtistScreen(
 }
 
 @Composable
-private fun ArtistSongItem(
+private fun AlbumSongItem(
     song: Song,
     onSongClick: (Song) -> Unit,
-    onAlbumClick: () -> Unit,
+    onArtistClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -187,34 +196,9 @@ private fun ArtistSongItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable { onSongClick(song) }
-            .padding(vertical = 8.dp),
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable { onAlbumClick() }
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            if (song.artworkUrl != null) {
-                AsyncImage(
-                    model = song.artworkUrl,
-                    contentDescription = "${song.title} album artwork",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = "♪",
-                    style = MaterialTheme.typography.titleLarge
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.title,
@@ -231,7 +215,8 @@ private fun ArtistSongItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { onArtistClick() }
             )
         }
     }

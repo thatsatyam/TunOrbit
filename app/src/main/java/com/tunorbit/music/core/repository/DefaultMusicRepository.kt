@@ -81,6 +81,23 @@ class DefaultMusicRepository(
         return localDataSource.getAlbums()
     }
 
+    override suspend fun getAlbum(albumId: String): Album? {
+        return try {
+            remoteDataSource.getAlbum(albumId) ?: localDataSource.getAlbum(albumId)
+        } catch (e: Exception) {
+            localDataSource.getAlbum(albumId)
+        }
+    }
+
+    override suspend fun getSongsByAlbum(albumId: String): List<Song> {
+        return try {
+            val results = remoteDataSource.getSongsByAlbum(albumId)
+            if (results.isNotEmpty()) results else localDataSource.getSongsByAlbum(albumId)
+        } catch (e: Exception) {
+            localDataSource.getSongsByAlbum(albumId)
+        }
+    }
+
     override suspend fun getArtists(): List<Artist> {
         return localDataSource.getArtists()
     }
