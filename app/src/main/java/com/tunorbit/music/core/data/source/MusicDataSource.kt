@@ -47,4 +47,6 @@ interface MusicDataSource {
     suspend fun addRecentSearch(query: String)
 
     suspend fun clearRecentSearches()
+
+    suspend fun getDiscoverSongs(): List<Song>
 }

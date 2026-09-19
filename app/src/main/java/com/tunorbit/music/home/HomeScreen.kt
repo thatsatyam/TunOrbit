@@ -46,6 +46,7 @@ fun HomeScreen(
     onSongClick: (Song, List<Song>) -> Unit
 ) {
     val songs = viewModel.songs.collectAsState()
+    val discoverSongs = viewModel.discoverSongs.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadSongs()
@@ -87,6 +88,17 @@ fun HomeScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        if (discoverSongs.value.isNotEmpty()) {
+            HomeSection(
+                title = "Discover on Audius",
+                subtitle = "Trending tracks right now",
+                songs = discoverSongs.value,
+                onSongClick = { s -> onSongClick(s, discoverSongs.value) }
+            )
+
+            Spacer(modifier = Modifier.height(30.dp))
+        }
 
         // We can hook this up to Recently Played eventually, 
         // but for now, we leave Home as is.

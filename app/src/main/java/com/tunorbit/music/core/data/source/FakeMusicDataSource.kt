@@ -226,4 +226,9 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
         prefs.edit().remove("recent_searches").apply()
         _recentSearches.value = emptyList()
     }
+
+    override suspend fun getDiscoverSongs(): List<Song> {
+        val liked = _likedSongIds.value
+        return baseSongs.shuffled().take(3).map { it.copy(isLiked = liked.contains(it.id)) }
+    }
 }

@@ -17,6 +17,7 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val _rawSongs = MutableStateFlow<List<Song>>(emptyList())
+    private val _rawDiscoverSongs = MutableStateFlow<List<Song>>(emptyList())
     
     val songs: StateFlow<List<Song>> = combine(
         _rawSongs,
@@ -26,9 +27,18 @@ class HomeViewModel(
         rawSongs.map { it.copy(isLiked = likedIds.contains(it.id)) }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    val discoverSongs: StateFlow<List<Song>> = combine(
+        _rawDiscoverSongs,
+        musicRepository.observeLikedSongs()
+    ) { rawSongs, likedSongs ->
+        val likedIds = likedSongs.map { it.id }.toSet()
+        rawSongs.map { it.copy(isLiked = likedIds.contains(it.id)) }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
     fun loadSongs() {
         viewModelScope.launch {
             _rawSongs.value = musicRepository.searchSongs("")
+            _rawDiscoverSongs.value = musicRepository.getDiscoverSongs()
         }
     }
 }

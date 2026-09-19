@@ -96,4 +96,13 @@ class DefaultMusicRepository(
     override suspend fun clearRecentSearches() {
         localDataSource.clearRecentSearches()
     }
+
+    override suspend fun getDiscoverSongs(): List<Song> {
+        return try {
+            val results = remoteDataSource.getDiscoverSongs()
+            if (results.isNotEmpty()) results else localDataSource.getDiscoverSongs()
+        } catch (e: Exception) {
+            localDataSource.getDiscoverSongs()
+        }
+    }
 }
