@@ -20,6 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,8 +42,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -103,11 +109,20 @@ fun PlayerScreen(
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "♪",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            if (song!!.artworkUrl != null) {
+                AsyncImage(
+                    model = song!!.artworkUrl,
+                    contentDescription = "${song!!.title} album artwork",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "♪",
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -137,10 +152,13 @@ fun PlayerScreen(
                 )
             }
 
-            IconButton(onClick = viewModel::toggleLike) {
+            IconButton(
+                onClick = { viewModel.toggleLike() },
+                modifier = Modifier.size(48.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Favorite,
-                    contentDescription = "Like",
+                    contentDescription = if (song!!.isLiked) "Remove from liked songs" else "Add to liked songs",
                     tint = if (song!!.isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                     modifier = Modifier.size(32.dp)
                 )
@@ -191,7 +209,12 @@ fun PlayerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = viewModel::skipToPrevious, modifier = Modifier.size(48.dp)) {
-                SkipPreviousIcon(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onSurface)
+                Icon(
+                    imageVector = Icons.Default.SkipPrevious,
+                    contentDescription = "Skip Previous",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(32.dp)
+                )
             }
 
             Box(
@@ -210,7 +233,12 @@ fun PlayerScreen(
             }
 
             IconButton(onClick = viewModel::skipToNext, modifier = Modifier.size(48.dp)) {
-                SkipNextIcon(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onSurface)
+                Icon(
+                    imageVector = Icons.Default.SkipNext,
+                    contentDescription = "Skip Next",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
 
@@ -258,33 +286,5 @@ private fun PauseIcon(modifier: Modifier = Modifier, color: Color) {
                 .weight(1f)
                 .background(color)
         )
-    }
-}
-
-@Composable
-private fun SkipPreviousIcon(modifier: Modifier = Modifier, color: Color) {
-    Canvas(modifier = modifier) {
-        drawRect(color, topLeft = Offset(0f, 0f), size = Size(size.width * 0.2f, size.height))
-        val path = Path().apply {
-            moveTo(size.width, 0f)
-            lineTo(size.width * 0.2f, size.height / 2f)
-            lineTo(size.width, size.height)
-            close()
-        }
-        drawPath(path, color)
-    }
-}
-
-@Composable
-private fun SkipNextIcon(modifier: Modifier = Modifier, color: Color) {
-    Canvas(modifier = modifier) {
-        val path = Path().apply {
-            moveTo(0f, 0f)
-            lineTo(size.width * 0.8f, size.height / 2f)
-            lineTo(0f, size.height)
-            close()
-        }
-        drawPath(path, color)
-        drawRect(color, topLeft = Offset(size.width * 0.8f, 0f), size = Size(size.width * 0.2f, size.height))
     }
 }

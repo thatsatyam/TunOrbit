@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.tunorbit.music.core.model.Song
 import com.tunorbit.music.core.repository.MusicRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -18,7 +22,14 @@ class PlayerViewModel(
     private val musicRepository: MusicRepository
 ) : ViewModel() {
     private val _currentSong = MutableStateFlow<Song?>(null)
-    val currentSong: StateFlow<Song?> = _currentSong.asStateFlow()
+    
+    val currentSong: StateFlow<Song?> = combine(
+        _currentSong,
+        musicRepository.observeLikedSongs()
+    ) { current, likedSongs ->
+        if (current == null) return@combine null
+        current.copy(isLiked = likedSongs.any { it.id == current.id })
+    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -26,19 +37,45 @@ class PlayerViewModel(
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
+    private var currentQueue: List<Song> = emptyList()
+
+    private val playerListener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            _isPlaying.value = isPlaying
+        }
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int
+        ) {
+            _currentPosition.value = player.currentPosition
+        }
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            mediaItem?.mediaId?.let { id ->
+                val song = currentQueue.find { it.id == id }
+                if (song != null) {
+                    _currentSong.value = song
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                        viewModelScope.launch {
+                            musicRepository.addRecentSong(song.id)
+                        }
+                    }
+                }
+            }
+        }
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_ENDED) {
+                _isPlaying.value = false
+                _currentPosition.value = player.duration.coerceAtLeast(0L)
+            }
+        }
+        override fun onPlayerError(error: PlaybackException) {
+            _isPlaying.value = false
+        }
+    }
+
     init {
-        player.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.value = isPlaying
-            }
-            override fun onPositionDiscontinuity(
-                oldPosition: Player.PositionInfo,
-                newPosition: Player.PositionInfo,
-                reason: Int
-            ) {
-                _currentPosition.value = player.currentPosition
-            }
-        })
+        player.addListener(playerListener)
         
         viewModelScope.launch {
             while(true) {
@@ -50,9 +87,10 @@ class PlayerViewModel(
         }
     }
 
-    fun playSong(song: Song) {
-        if (_currentSong.value?.id == song.id) {
-            // Already playing this song, just resume
+    fun playQueue(queue: List<Song>, startIndex: Int) {
+        val song = queue.getOrNull(startIndex) ?: return
+        
+        if (_currentSong.value?.id == song.id && currentQueue.size == queue.size && currentQueue.firstOrNull()?.id == queue.firstOrNull()?.id) {
             if (!player.isPlaying) {
                 player.play()
                 _isPlaying.value = true
@@ -60,9 +98,21 @@ class PlayerViewModel(
             return
         }
 
+        viewModelScope.launch {
+            musicRepository.addRecentSong(song.id)
+        }
+
+        currentQueue = queue
         _currentSong.value = song
-        val mediaItem = MediaItem.fromUri(song.mediaUrl)
-        player.setMediaItem(mediaItem)
+        
+        player.clearMediaItems()
+        val mediaItems = queue.map { 
+            MediaItem.Builder()
+                .setUri(it.mediaUrl)
+                .setMediaId(it.id)
+                .build()
+        }
+        player.setMediaItems(mediaItems, startIndex, 0L)
         player.prepare()
         player.play()
         _isPlaying.value = true
@@ -82,7 +132,6 @@ class PlayerViewModel(
         _currentSong.value?.let { song ->
             viewModelScope.launch {
                 musicRepository.toggleLike(song.id)
-                _currentSong.value = song.copy(isLiked = !song.isLiked)
             }
         }
     }
@@ -92,18 +141,26 @@ class PlayerViewModel(
         _currentPosition.value = positionMs
     }
 
-    // In a real app we would manage a playlist. For now, we simulate skip next/prev.
     fun skipToNext() {
-        // TODO: implement real playlist logic
+        if (player.hasNextMediaItem()) {
+            player.seekToNext()
+        }
     }
 
     fun skipToPrevious() {
-        // TODO: implement real playlist logic
+        if (player.hasPreviousMediaItem()) {
+            player.seekToPrevious()
+        } else {
+            player.seekTo(0L)
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        player.release()
+        player.removeListener(playerListener)
+        // We do NOT release the player here. 
+        // The player lifecycle is tied to the AppContainer and MediaSessionService, 
+        // allowing it to outlive this ViewModel for background playback.
     }
 }
 

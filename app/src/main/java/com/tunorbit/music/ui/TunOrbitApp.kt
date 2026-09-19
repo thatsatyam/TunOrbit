@@ -14,6 +14,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -28,6 +29,8 @@ import com.tunorbit.music.home.HomeScreen
 import com.tunorbit.music.home.HomeViewModel
 import com.tunorbit.music.library.LibraryScreen
 import com.tunorbit.music.library.LibraryViewModel
+import com.tunorbit.music.library.PlaylistScreen
+import com.tunorbit.music.library.PlaylistViewModel
 import com.tunorbit.music.player.MiniPlayer
 import com.tunorbit.music.player.PlayerScreen
 import com.tunorbit.music.player.PlayerViewModel
@@ -55,7 +58,8 @@ fun TunOrbitApp(
     homeViewModel: HomeViewModel,
     searchViewModel: SearchViewModel,
     libraryViewModel: LibraryViewModel,
-    playerViewModel: PlayerViewModel
+    playerViewModel: PlayerViewModel,
+    playlistViewModel: PlaylistViewModel
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -124,8 +128,8 @@ fun TunOrbitApp(
             composable(TopLevelDestination.Home.route) {
                 HomeScreen(
                     viewModel = homeViewModel,
-                    onSongClick = { song ->
-                        playerViewModel.playSong(song)
+                    onSongClick = { song, queue ->
+                        playerViewModel.playQueue(queue, queue.indexOf(song).coerceAtLeast(0))
                         navController.navigate("player") {
                             launchSingleTop = true
                         }
@@ -135,8 +139,8 @@ fun TunOrbitApp(
             composable(TopLevelDestination.Search.route) {
                 SearchScreen(
                     viewModel = searchViewModel,
-                    onSongClick = { song ->
-                        playerViewModel.playSong(song)
+                    onSongClick = { song, queue ->
+                        playerViewModel.playQueue(queue, queue.indexOf(song).coerceAtLeast(0))
                         navController.navigate("player") {
                             launchSingleTop = true
                         }
@@ -147,12 +151,34 @@ fun TunOrbitApp(
             composable(TopLevelDestination.Library.route) {
                 LibraryScreen(
                     viewModel = libraryViewModel,
-                    onSongClick = { song ->
-                        playerViewModel.playSong(song)
+                    onSongClick = { song, queue ->
+                        playerViewModel.playQueue(queue, queue.indexOf(song).coerceAtLeast(0))
                         navController.navigate("player") {
                             launchSingleTop = true
                         }
+                    },
+                    onPlaylistClick = { playlistId ->
+                        navController.navigate("playlist/$playlistId") {
+                            launchSingleTop = true
+                        }
                     }
+                )
+            }
+            composable("playlist/{playlistId}") { backStackEntry ->
+                val playlistId = backStackEntry.arguments?.getString("playlistId") ?: return@composable
+                LaunchedEffect(playlistId) {
+                    playlistViewModel.loadPlaylist(playlistId)
+                }
+                PlaylistScreen(
+                    viewModel = playlistViewModel,
+                    onSongClick = { song, queue ->
+                        playerViewModel.playQueue(queue, queue.indexOf(song).coerceAtLeast(0))
+                        navController.navigate("player") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onBackClick = { navController.popBackStack() },
+                    onDeleted = { navController.popBackStack() }
                 )
             }
             composable("player") {

@@ -21,30 +21,43 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.tunorbit.music.core.model.Playlist
 import com.tunorbit.music.core.model.Song
 
 @Composable
 fun LibraryScreen(
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song, List<Song>) -> Unit,
+    onPlaylistClick: (String) -> Unit
 ) {
     val recentSongs by viewModel.recentSongs.collectAsState()
     val likedSongs by viewModel.likedSongs.collectAsState()
+    val playlists by viewModel.playlists.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newPlaylistName by remember { mutableStateOf("") }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -63,7 +76,7 @@ fun LibraryScreen(
         item {
             SectionHeader(title = "Playlists")
             Spacer(modifier = Modifier.height(14.dp))
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -75,7 +88,7 @@ fun LibraryScreen(
                         .size(64.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { /* TODO: Create Playlist */ },
+                        .clickable { showCreateDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -90,6 +103,31 @@ fun LibraryScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (playlists.isEmpty()) {
+                Text(
+                    text = "No playlists created yet.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
+            } else {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    itemsIndexed(playlists, key = { _, p -> "pl_${p.id}" }) { index, playlist ->
+                        PlaylistCard(
+                            playlist = playlist,
+                            index = index,
+                            cardWidth = 140.dp,
+                            onClick = { onPlaylistClick(playlist.id) }
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -110,7 +148,7 @@ fun LibraryScreen(
                             song = song,
                             index = index,
                             cardWidth = 140.dp,
-                            onSongClick = onSongClick
+                            onSongClick = { s -> onSongClick(s, recentSongs) }
                         )
                     }
                 }
@@ -136,10 +174,104 @@ fun LibraryScreen(
         items(likedSongs, key = { "liked_${it.id}" }) { song ->
             LibrarySongListItem(
                 song = song,
-                onSongClick = onSongClick,
+                onSongClick = { s -> onSongClick(s, likedSongs) },
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
         }
+    }
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showCreateDialog = false
+                newPlaylistName = ""
+            },
+            title = { Text("New Playlist") },
+            text = {
+                OutlinedTextField(
+                    value = newPlaylistName,
+                    onValueChange = { newPlaylistName = it },
+                    singleLine = true,
+                    placeholder = { Text("Playlist name") }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newPlaylistName.isNotBlank()) {
+                            viewModel.createPlaylist(newPlaylistName.trim())
+                            showCreateDialog = false
+                            newPlaylistName = ""
+                        }
+                    },
+                    enabled = newPlaylistName.isNotBlank()
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showCreateDialog = false 
+                    newPlaylistName = ""
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun PlaylistCard(
+    playlist: Playlist,
+    index: Int,
+    cardWidth: Dp,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(cardWidth)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(bottom = 12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(cardWidth)
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    when (index % 3) {
+                        0 -> MaterialTheme.colorScheme.secondaryContainer
+                        1 -> MaterialTheme.colorScheme.tertiaryContainer
+                        else -> MaterialTheme.colorScheme.primaryContainer
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "PL",
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = playlist.name,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = "${playlist.songIds.size} songs",
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -180,10 +312,19 @@ private fun LibrarySongCard(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "♪",
-                style = MaterialTheme.typography.headlineMedium
-            )
+            if (song.artworkUrl != null) {
+                AsyncImage(
+                    model = song.artworkUrl,
+                    contentDescription = "${song.title} album artwork",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "♪",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -227,10 +368,19 @@ private fun LibrarySongListItem(
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "♪",
-                style = MaterialTheme.typography.titleLarge
-            )
+            if (song.artworkUrl != null) {
+                AsyncImage(
+                    model = song.artworkUrl,
+                    contentDescription = "${song.title} album artwork",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "♪",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))

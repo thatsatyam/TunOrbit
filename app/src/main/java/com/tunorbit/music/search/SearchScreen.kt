@@ -34,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.tunorbit.music.core.model.Song
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +44,7 @@ import com.tunorbit.music.core.model.Song
 fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     onBackClick: () -> Unit
 ) {
     val query by viewModel.searchQuery.collectAsState()
@@ -117,7 +119,7 @@ fun SearchScreen(
                         )
                     ) {
                         items(results, key = { it.id }) { song ->
-                            SearchResultItem(song = song, onSongClick = onSongClick)
+                            SearchResultItem(song = song, onSongClick = { s -> onSongClick(s, results) })
                         }
                     }
                 }
@@ -143,10 +145,19 @@ private fun SearchResultItem(song: Song, onSongClick: (Song) -> Unit) {
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "♪",
-                style = MaterialTheme.typography.titleLarge
-            )
+            if (song.artworkUrl != null) {
+                AsyncImage(
+                    model = song.artworkUrl,
+                    contentDescription = "${song.title} album artwork",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "♪",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))

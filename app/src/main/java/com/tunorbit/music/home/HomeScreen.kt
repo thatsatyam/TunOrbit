@@ -32,16 +32,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.tunorbit.music.core.model.Song
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song, List<Song>) -> Unit
 ) {
     val songs = viewModel.songs.collectAsState()
 
@@ -80,18 +82,20 @@ fun HomeScreen(
             PlayForMeCard(
                 song = song,
                 modifier = Modifier.padding(horizontal = 20.dp),
-                onSongClick = onSongClick
+                onSongClick = { s -> onSongClick(s, listOf(s)) }
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // We can hook this up to Recently Played eventually, 
+        // but for now, we leave Home as is.
         if (songs.value.isNotEmpty()) {
             HomeSection(
                 title = "Today's Session",
                 subtitle = "A few tracks to get you started",
                 songs = songs.value,
-                onSongClick = onSongClick
+                onSongClick = { s -> onSongClick(s, songs.value) }
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -100,7 +104,7 @@ fun HomeScreen(
                 title = "Continue Listening",
                 subtitle = "Pick up where you left off",
                 songs = songs.value,
-                onSongClick = onSongClick
+                onSongClick = { s -> onSongClick(s, songs.value) }
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -109,7 +113,7 @@ fun HomeScreen(
                 title = "Made for You",
                 subtitle = "Based on what you enjoy",
                 songs = songs.value,
-                onSongClick = onSongClick
+                onSongClick = { s -> onSongClick(s, songs.value) }
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -118,7 +122,7 @@ fun HomeScreen(
                 title = "Recently Discovered",
                 subtitle = "Fresh music worth exploring",
                 songs = songs.value,
-                onSongClick = onSongClick
+                onSongClick = { s -> onSongClick(s, songs.value) }
             )
         }
     }
@@ -189,10 +193,19 @@ private fun PlayForMeCard(
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "♪",
-                        style = MaterialTheme.typography.headlineLarge
-                    )
+                    if (song.artworkUrl != null) {
+                        AsyncImage(
+                            model = song.artworkUrl,
+                            contentDescription = "${song.title} album artwork",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = "♪",
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -314,10 +327,19 @@ private fun SongCard(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "♪",
-                style = MaterialTheme.typography.headlineMedium
-            )
+            if (song.artworkUrl != null) {
+                AsyncImage(
+                    model = song.artworkUrl,
+                    contentDescription = "${song.title} album artwork",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = "♪",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

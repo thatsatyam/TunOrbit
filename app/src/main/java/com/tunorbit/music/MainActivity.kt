@@ -12,6 +12,8 @@ import com.tunorbit.music.home.HomeViewModel
 import com.tunorbit.music.home.HomeViewModelFactory
 import com.tunorbit.music.library.LibraryViewModel
 import com.tunorbit.music.library.LibraryViewModelFactory
+import com.tunorbit.music.library.PlaylistViewModel
+import com.tunorbit.music.library.PlaylistViewModelFactory
 import com.tunorbit.music.player.PlayerViewModel
 import com.tunorbit.music.player.PlayerViewModelFactory
 import com.tunorbit.music.search.SearchViewModel
@@ -21,7 +23,7 @@ import com.tunorbit.music.ui.theme.TunOrbitTheme
 
 class MainActivity : ComponentActivity() {
 
-    private val appContainer by lazy { AppContainer(applicationContext) }
+    private val appContainer by lazy { (application as TunOrbitApplication).appContainer }
 
     private val homeViewModel by lazy {
         HomeViewModelFactory(appContainer.musicRepository)
@@ -36,6 +38,11 @@ class MainActivity : ComponentActivity() {
     private val libraryViewModel by lazy {
         LibraryViewModelFactory(appContainer.musicRepository)
             .create(LibraryViewModel::class.java)
+    }
+
+    private val playlistViewModel by lazy {
+        PlaylistViewModelFactory(appContainer.musicRepository)
+            .create(PlaylistViewModel::class.java)
     }
 
     private val playerViewModel by lazy {
@@ -54,7 +61,8 @@ class MainActivity : ComponentActivity() {
                     homeViewModel = homeViewModel,
                     searchViewModel = searchViewModel,
                     libraryViewModel = libraryViewModel,
-                    playerViewModel = playerViewModel
+                    playerViewModel = playerViewModel,
+                    playlistViewModel = playlistViewModel
                 )
             }
         }
