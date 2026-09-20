@@ -49,6 +49,7 @@ fun HomeScreen(
 ) {
     val songs = viewModel.songs.collectAsState()
     val discoverSongs = viewModel.discoverSongs.collectAsState()
+    val recommendedSongs = viewModel.recommendedSongs.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadSongs()
@@ -81,17 +82,29 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        songs.value.firstOrNull()?.let { song ->
+        recommendedSongs.value.firstOrNull()?.let { song ->
             PlayForMeCard(
                 song = song,
                 modifier = Modifier.padding(horizontal = 20.dp),
-                onSongClick = { s -> onSongClick(s, listOf(s)) },
+                onSongClick = { s -> onSongClick(s, recommendedSongs.value) },
                 onArtistClick = { onArtistClick(song.artistId) },
                 onAlbumClick = { onAlbumClick(song.albumId) }
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        if (recommendedSongs.value.size > 1) {
+            HomeSection(
+                title = "Recommended For You",
+                subtitle = "Based on what you've been listening to",
+                songs = recommendedSongs.value.drop(1),
+                onSongClick = { s -> onSongClick(s, recommendedSongs.value) },
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick
+            )
+            Spacer(modifier = Modifier.height(30.dp))
+        }
 
         if (discoverSongs.value.isNotEmpty()) {
             HomeSection(

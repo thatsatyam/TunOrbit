@@ -6,6 +6,7 @@ import com.tunorbit.music.core.model.Artist
 import com.tunorbit.music.core.model.Playlist
 import com.tunorbit.music.core.model.Song
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class DefaultMusicRepository(
     private val localDataSource: MusicDataSource,
@@ -139,6 +140,43 @@ class DefaultMusicRepository(
                 results.forEach { localDataSource.cacheSong(it) }
                 results
             } else localDataSource.getDiscoverSongs()
+        } catch (e: Exception) {
+            localDataSource.getDiscoverSongs()
+        }
+    }
+
+    override suspend fun getRecommendedSongs(): List<Song> {
+        return try {
+            val recent = localDataSource.observeRecentSongs().first()
+            val liked = localDataSource.observeLikedSongs().first()
+            val historySongs = (recent + liked).distinctBy { it.id }
+            val historyIds = historySongs.map { it.id }.toSet()
+            
+            val artistIds = historySongs.map { it.artistId }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .shuffled()
+                .take(3)
+            
+            val recommendations = mutableListOf<Song>()
+            for (artistId in artistIds) {
+                val artistSongs = remoteDataSource.getSongsByArtist(artistId)
+                recommendations.addAll(artistSongs.filter { !historyIds.contains(it.id) })
+            }
+            
+            val finalRecs = recommendations.distinctBy { it.id }.shuffled().take(15)
+            if (finalRecs.isNotEmpty()) {
+                finalRecs.forEach { localDataSource.cacheSong(it) }
+                finalRecs
+            } else {
+                val fallback = remoteDataSource.getDiscoverSongs()
+                if (fallback.isNotEmpty()) {
+                    fallback.forEach { localDataSource.cacheSong(it) }
+                    fallback
+                } else {
+                    localDataSource.getDiscoverSongs()
+                }
+            }
         } catch (e: Exception) {
             localDataSource.getDiscoverSongs()
         }

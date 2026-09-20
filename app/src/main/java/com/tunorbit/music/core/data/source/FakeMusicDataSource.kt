@@ -304,4 +304,8 @@ class FakeMusicDataSource(private val prefs: SharedPreferences) : MusicDataSourc
         val liked = _likedSongIds.value
         return baseSongs.shuffled().take(3).map { it.copy(isLiked = liked.contains(it.id)) }
     }
+
+    override suspend fun getRecommendedSongs(): List<Song> {
+        return getDiscoverSongs()
+    }
 }

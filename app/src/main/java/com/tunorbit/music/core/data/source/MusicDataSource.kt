@@ -54,5 +54,7 @@ interface MusicDataSource {
 
     suspend fun getDiscoverSongs(): List<Song>
 
+    suspend fun getRecommendedSongs(): List<Song>
+
     suspend fun cacheSong(song: Song)
 }

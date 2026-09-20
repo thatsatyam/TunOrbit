@@ -516,5 +516,9 @@ class RemoteMusicDataSource : MusicDataSource {
 
     override suspend fun clearRecentSearches() {}
 
+    override suspend fun getRecommendedSongs(): List<Song> {
+        return emptyList()
+    }
+
     override suspend fun cacheSong(song: Song) {}
 }
