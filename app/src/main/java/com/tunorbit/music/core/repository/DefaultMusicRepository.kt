@@ -151,20 +151,45 @@ class DefaultMusicRepository(
             val liked = localDataSource.observeLikedSongs().first()
             val historySongs = (recent + liked).distinctBy { it.id }
             val historyIds = historySongs.map { it.id }.toSet()
-            
-            val artistIds = historySongs.map { it.artistId }
-                .filter { it.isNotBlank() }
-                .distinct()
-                .shuffled()
-                .take(3)
-            
-            val recommendations = mutableListOf<Song>()
-            for (artistId in artistIds) {
+
+            // 1. Score artists by frequency of engagement
+            val artistFrequencies = historySongs.groupingBy { it.artistId }
+                .eachCount()
+                .filterKeys { it.isNotBlank() }
+
+            // 2. Select top 5 artists deterministically (frequency desc, then alphabetically)
+            val topArtists = artistFrequencies.entries
+                .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+                .take(5)
+                .map { it.key }
+
+            // 3. Fetch songs for these artists and exclude exact history matches
+            val recommendationsByArtist = mutableMapOf<String, List<Song>>()
+            for (artistId in topArtists) {
                 val artistSongs = remoteDataSource.getSongsByArtist(artistId)
-                recommendations.addAll(artistSongs.filter { !historyIds.contains(it.id) })
+                recommendationsByArtist[artistId] = artistSongs
+                    .filter { !historyIds.contains(it.id) }
+                    .distinctBy { it.id }
             }
-            
-            val finalRecs = recommendations.distinctBy { it.id }.shuffled().take(15)
+
+            // 4. Interleave results round-robin for variety without random shuffle
+            val finalRecs = mutableListOf<Song>()
+            val maxSongsPerArtist = recommendationsByArtist.values.maxOfOrNull { it.size } ?: 0
+
+            for (i in 0 until maxSongsPerArtist) {
+                for (artistId in topArtists) {
+                    val songs = recommendationsByArtist[artistId]
+                    if (songs != null && i < songs.size) {
+                        val song = songs[i]
+                        if (finalRecs.none { it.id == song.id }) {
+                            finalRecs.add(song)
+                        }
+                    }
+                    if (finalRecs.size >= 15) break
+                }
+                if (finalRecs.size >= 15) break
+            }
+
             if (finalRecs.isNotEmpty()) {
                 finalRecs.forEach { localDataSource.cacheSong(it) }
                 finalRecs
