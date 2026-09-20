@@ -91,10 +91,12 @@ class RemoteMusicDataSource : MusicDataSource {
                     }
                 }
             }
-            connection.disconnect()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (ignore: Exception) {
             // Return empty list on failure so app doesn't crash
+        } finally {
+            try {
+                (URL("$baseUrl/").openConnection() as? HttpURLConnection)?.disconnect()
+            } catch (ignored: Exception) {}
         }
         
         results
@@ -169,8 +171,11 @@ class RemoteMusicDataSource : MusicDataSource {
                 }
             }
             connection.disconnect()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (ignored: Exception) {
+        } finally {
+            try {
+                (URL("$baseUrl/").openConnection() as? HttpURLConnection)?.disconnect()
+            } catch (ignored: Exception) {}
         }
         
         results
@@ -251,8 +256,11 @@ class RemoteMusicDataSource : MusicDataSource {
                 }
             }
             connection.disconnect()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (ignored: Exception) {
+        } finally {
+            try {
+                (URL("$baseUrl/").openConnection() as? HttpURLConnection)?.disconnect()
+            } catch (ignored: Exception) {}
         }
         
         results
@@ -308,8 +316,11 @@ class RemoteMusicDataSource : MusicDataSource {
                 }
             }
             connection.disconnect()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (ignored: Exception) {
+        } finally {
+            try {
+                (URL("$baseUrl/").openConnection() as? HttpURLConnection)?.disconnect()
+            } catch (ignored: Exception) {}
         }
         return@withContext null
     }
@@ -419,8 +430,11 @@ class RemoteMusicDataSource : MusicDataSource {
                 }
             }
             connection.disconnect()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (ignored: Exception) {
+        } finally {
+            try {
+                (URL("$baseUrl/").openConnection() as? HttpURLConnection)?.disconnect()
+            } catch (ignored: Exception) {}
         }
         return@withContext null
     }
@@ -497,8 +511,11 @@ class RemoteMusicDataSource : MusicDataSource {
                 }
             }
             connection.disconnect()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (ignored: Exception) {
+        } finally {
+            try {
+                (URL("$baseUrl/").openConnection() as? HttpURLConnection)?.disconnect()
+            } catch (ignored: Exception) {}
         }
         
         results

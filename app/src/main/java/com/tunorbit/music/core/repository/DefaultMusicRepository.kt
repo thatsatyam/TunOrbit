@@ -20,7 +20,7 @@ class DefaultMusicRepository(
                 results.forEach { localDataSource.cacheSong(it) }
                 results
             } else localDataSource.searchSongs(query)
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.searchSongs(query)
         }
     }
@@ -36,7 +36,7 @@ class DefaultMusicRepository(
                 results.forEach { localDataSource.cacheSong(it) }
                 results
             } else localDataSource.getSongsByArtist(artistId)
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.getSongsByArtist(artistId)
         }
     }
@@ -44,7 +44,7 @@ class DefaultMusicRepository(
     override suspend fun getArtist(artistId: String): Artist? {
         return try {
             remoteDataSource.getArtist(artistId) ?: localDataSource.getArtist(artistId)
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.getArtist(artistId)
         }
     }
@@ -100,7 +100,7 @@ class DefaultMusicRepository(
     override suspend fun getAlbum(albumId: String): Album? {
         return try {
             remoteDataSource.getAlbum(albumId) ?: localDataSource.getAlbum(albumId)
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.getAlbum(albumId)
         }
     }
@@ -112,7 +112,7 @@ class DefaultMusicRepository(
                 results.forEach { localDataSource.cacheSong(it) }
                 results
             } else localDataSource.getSongsByAlbum(albumId)
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.getSongsByAlbum(albumId)
         }
     }
@@ -140,7 +140,7 @@ class DefaultMusicRepository(
                 results.forEach { localDataSource.cacheSong(it) }
                 results
             } else localDataSource.getDiscoverSongs()
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.getDiscoverSongs()
         }
     }
@@ -202,7 +202,7 @@ class DefaultMusicRepository(
                     localDataSource.getDiscoverSongs()
                 }
             }
-        } catch (e: Exception) {
+        } catch (ignore: Exception) {
             localDataSource.getDiscoverSongs()
         }
     }
