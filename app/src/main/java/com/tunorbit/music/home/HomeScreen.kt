@@ -24,11 +24,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +52,7 @@ fun HomeScreen(
     val songs = viewModel.songs.collectAsState()
     val discoverSongs = viewModel.discoverSongs.collectAsState()
     val recommendedSongs = viewModel.recommendedSongs.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadSongs()
@@ -64,13 +67,23 @@ fun HomeScreen(
     ) {
         HomeHeader(modifier = Modifier.padding(horizontal = 20.dp))
 
-        Spacer(modifier = Modifier.height(28.dp))
+        if (isLoading && recommendedSongs.value.isEmpty() && discoverSongs.value.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Spacer(modifier = Modifier.height(28.dp))
 
-        Text(
-            text = "Play for Me",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
+            Text(
+                text = "Play for Me",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
 
         Spacer(modifier = Modifier.height(4.dp))
 
@@ -163,6 +176,7 @@ fun HomeScreen(
                 onArtistClick = onArtistClick,
                 onAlbumClick = onAlbumClick
             )
+        }
         }
     }
 }

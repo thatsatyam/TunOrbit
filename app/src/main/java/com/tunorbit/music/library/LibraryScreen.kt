@@ -272,8 +272,10 @@ private fun PlaylistCard(
         
         Spacer(modifier = Modifier.height(2.dp))
 
+        val songCount = playlist.songIds.size
+        val songLabel = if (songCount == 1) "song" else "songs"
         Text(
-            text = "${playlist.songIds.size} songs",
+            text = "$songCount $songLabel",
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
