@@ -27,7 +27,7 @@ class HomeViewModel(
     ) { rawSongs, likedSongs ->
         val likedIds = likedSongs.map { it.id }.toSet()
         rawSongs.map { it.copy(isLiked = likedIds.contains(it.id)) }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val discoverSongs: StateFlow<List<Song>> = combine(
         _rawDiscoverSongs,
@@ -35,7 +35,7 @@ class HomeViewModel(
     ) { rawSongs, likedSongs ->
         val likedIds = likedSongs.map { it.id }.toSet()
         rawSongs.map { it.copy(isLiked = likedIds.contains(it.id)) }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recommendedSongs: StateFlow<List<Song>> = combine(
         _rawRecommendedSongs,
@@ -43,12 +43,13 @@ class HomeViewModel(
     ) { rawSongs, likedSongs ->
         val likedIds = likedSongs.map { it.id }.toSet()
         rawSongs.map { it.copy(isLiked = likedIds.contains(it.id)) }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     fun loadSongs() {
+        if (_rawSongs.value.isNotEmpty() || _isLoading.value) return
         viewModelScope.launch {
             _isLoading.value = true
             _rawSongs.value = musicRepository.searchSongs("")

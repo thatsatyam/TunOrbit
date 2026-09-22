@@ -30,10 +30,10 @@ class SearchViewModel(
     ) { results, likedSongs ->
         val likedIds = likedSongs.map { it.id }.toSet()
         results.map { it.copy(isLiked = likedIds.contains(it.id)) }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val recentSearches: StateFlow<List<String>> = musicRepository.observeRecentSearches()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -41,6 +41,8 @@ class SearchViewModel(
     private var searchJob: Job? = null
 
     fun onSearchQueryChanged(query: String) {
+        if (query == _searchQuery.value) return
+        
         _searchQuery.value = query
         searchJob?.cancel()
 

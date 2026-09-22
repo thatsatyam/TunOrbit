@@ -23,7 +23,7 @@ class PlaylistViewModel(
 
     val playlist: StateFlow<Playlist?> = combine(_playlistId, musicRepository.observePlaylists()) { id, playlists ->
         playlists.find { it.id == id }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
     val songs: StateFlow<List<Song>> = _songs.asStateFlow()
@@ -34,6 +34,7 @@ class PlaylistViewModel(
     private var job: Job? = null
 
     fun loadPlaylist(id: String) {
+        if (_playlistId.value == id) return
         _playlistId.value = id
         job?.cancel()
         job = viewModelScope.launch {

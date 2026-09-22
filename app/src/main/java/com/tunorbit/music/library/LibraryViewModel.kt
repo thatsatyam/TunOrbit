@@ -18,13 +18,13 @@ class LibraryViewModel(
 ) : ViewModel() {
 
     val recentSongs: StateFlow<List<Song>> = musicRepository.observeRecentSongs()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val likedSongs: StateFlow<List<Song>> = musicRepository.observeLikedSongs()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val playlists: StateFlow<List<Playlist>> = musicRepository.observePlaylists()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

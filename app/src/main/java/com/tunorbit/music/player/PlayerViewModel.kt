@@ -29,7 +29,7 @@ class PlayerViewModel(
     ) { current, likedSongs ->
         if (current == null) return@combine null
         current.copy(isLiked = likedSongs.any { it.id == current.id })
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -76,6 +76,17 @@ class PlayerViewModel(
 
     init {
         player.addListener(playerListener)
+        
+        // Sync initial state in case player is already active (e.g. Activity recreation)
+        _isPlaying.value = player.isPlaying
+        _currentPosition.value = player.currentPosition
+        if (player.currentMediaItem != null && _currentSong.value == null) {
+            val id = player.currentMediaItem?.mediaId
+            if (id != null) {
+                // Try to find the song in the queue, or at least keep the ID
+                _currentSong.value = currentQueue.find { it.id == id } 
+            }
+        }
         
         viewModelScope.launch {
             while(true) {

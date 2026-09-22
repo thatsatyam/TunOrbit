@@ -28,12 +28,13 @@ class AlbumViewModel(
     ) { raw, liked ->
         val likedIds = liked.map { it.id }.toSet()
         raw.map { it.copy(isLiked = likedIds.contains(it.id)) }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     fun loadAlbum(albumId: String) {
+        if (_album.value?.id == albumId || _isLoading.value) return
         viewModelScope.launch {
             _isLoading.value = true
             _album.value = musicRepository.getAlbum(albumId)
